@@ -8,5 +8,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/shm.h>
+
+//Deallocate shared memory
+int deallocateMem(int shmid, void *shmaddr);
 
 #endif

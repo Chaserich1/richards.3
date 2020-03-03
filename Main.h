@@ -8,5 +8,24 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <string.h>
+
+FILE* INFILE;
+
+//Contains Help Message
+void displayHelpMessage();
+
+//Detaching and removing shared memory
+int deallocateMem(int shmid, void *shmaddr);
+
+//Getting and Attaching to shared Memory
+void sharedMemoryWork(int totalInts, int n, char *inFile);
+
+//Handling the fork and exec
+void processHandler(int totalInts, int n);
 
 #endif
