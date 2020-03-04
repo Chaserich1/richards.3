@@ -39,7 +39,9 @@ int main(int argc, char* argv[])
         perror("bin_adder: Error: Failed to attach to shared memory");
         exit(EXIT_FAILURE);
     }
-    
+
+    //printf("ChildTest\n");  
+ 
     //Detach from shared memory and check for it returning -1
     sharedMemDetach = deallocateMem(sharedMemSegment, sharedArr);
     if(sharedMemDetach == -1)

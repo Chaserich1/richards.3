@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
     int c;
     char *inFile = "input.dat"; //Default inputfile name
     int n = 1; //Max Children in system at once
-    int totalInts;
+    int totalInts = 0;
 
     while((c = getopt(argc, argv, "hf:n:")) != -1)
     {
@@ -69,7 +69,9 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     }
 
     INFILE = fopen(inFile, "a"); 
-
+    
+    //printf("%d %d\n", totalInts, n);
+    processHandler(totalInts, n);
 
     //Detach and Remove Shared Memory
     sharedMemDetach = deallocateMem(sharedMemSegment, intArray); 
@@ -82,8 +84,57 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     }
 }
 
-void processHandling(int totalInts, int n)
+void processHandler(int totalInts, int n)
 {
+    int completedChildren = 0; //Completed child processes
+    int runningChildren = 0; //Children in system
+    int childCounter = 0;
+    pid_t pid, waitingID;
+    int status;
+    int childExec; //For checking exec failure
+    int index = 0;
+    char strIndex[50]; //Convert index to char string for exec
+
+    while(completedChildren < 64)
+    {
+        if(runningChildren < 20 && childCounter < 64)
+        {
+            //Fork
+            pid = fork();
+            runningChildren++;
+            //Check for fork failure if it returns -1
+            if(pid == -1)
+            {
+                perror("master: Error: Failed to fork");
+                exit(EXIT_FAILURE);
+            }
+            //Fork returns 0 if it is successful
+            else if(pid == 0)
+            {
+                sprintf(strIndex, "%d", completedChildren);
+                char *args[] = {"./bin_adder", strIndex, NULL};
+                childExec = execvp(args[0], args);
+
+                //If exec fails it returns -1 so perror and exit
+                if(childExec == -1)
+                {
+                    perror("master: Error: Child failed to exec");
+                    exit(EXIT_FAILURE);
+                }                                   
+            }
+            childCounter++;
+        }
+        
+        waitingID = waitpid(-1, &status, WNOHANG);
+
+        if(waitingID > 0)
+        {
+            completedChildren++;
+            runningChildren--;
+            //printf("%d\n", completedChildren);
+        }
+    }
+
 
 }
 
