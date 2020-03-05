@@ -31,7 +31,18 @@ int main(int argc, char* argv[])
         }
     }
   
+    /* Signal for terminating, freeing up shared mem, killing all children 
+       if the program goes for more than two seconds of real clock */
+    signal(SIGALRM, sigHandler);
+    alarm(100);
+
+    /* Signal for terminating, freeing up shared mem, killing all 
+       children if the user enters ctrl-c */
+    signal(SIGINT, sigHandler);  
+
     sharedMemoryWork(totalInts, n, inFile);
+
+    
 
 }
 
@@ -147,6 +158,37 @@ int deallocateMem(int shmid, void *shmaddr)
     shmctl(shmid, IPC_RMID, NULL);
     return 0;
 }
+
+/* Signal handler, that looks to see if the signal is for 2 seconds being up or ctrl-c being entered.
+ *    In both cases, I connect to shared memory so that I can write the time that it is killed to the file
+ *       and so that I can disconnect and remove the shared memory. */
+void sigHandler(int sig)
+{
+    if(sig == SIGALRM)
+    {
+        key_t key = ftok(".",'m');
+        int sharedMemSegment;
+        sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
+        printf("One-Hundred Seconds is up.\n"); 
+        printf("Killing children and removing shared memory.\n");
+        shmctl(sharedMemSegment, IPC_RMID, NULL);
+        kill(0, SIGKILL);
+        exit(EXIT_SUCCESS);
+    }
+    
+    if(sig == SIGINT)
+    {
+        key_t key = ftok(".",'m');
+        int sharedMemSegment;
+        sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
+        printf("Ctrl-c was entered\n");
+        printf("Killing children and removing shared memory.\n");
+        shmctl(sharedMemSegment, IPC_RMID, NULL);
+        kill(0, SIGKILL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
 
 /* For the -h option that can be entered */
 void displayHelpMessage() 

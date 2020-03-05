@@ -41,7 +41,9 @@ int main(int argc, char* argv[])
     }
 
     //printf("ChildTest\n");  
- 
+    for(;;)
+        ;   
+  
     //Detach from shared memory and check for it returning -1
     sharedMemDetach = deallocateMem(sharedMemSegment, sharedArr);
     if(sharedMemDetach == -1)

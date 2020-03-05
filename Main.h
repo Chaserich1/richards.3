@@ -28,4 +28,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile);
 //Handling the fork and exec
 void processHandler(int totalInts, int n);
 
+//Signal Handling (ctrl c and timeout)
+void sigHandler(int sig);
+
 #endif
