@@ -60,7 +60,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     }
 
     //Allocate the shared memory using shmget
-    sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
+    sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0666);
     
     //If shmget is unsuccessful it retruns -1 so check for this
     if(sharedMemSegment == -1) 
@@ -79,8 +79,12 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
         exit(EXIT_FAILURE);
     }
 
-    INFILE = fopen(inFile, "a"); 
-    
+    //Open the input file using the function that checks for failure
+    INFILE = openFile(inFile, "r"); 
+
+    //Read the input file to shared memory
+    totalInts = readFile(INFILE, sharedMemSegment);
+   
     //printf("%d %d\n", totalInts, n);
     processHandler(totalInts, n);
 
@@ -148,6 +152,47 @@ void processHandler(int totalInts, int n)
 
 
 }
+
+//Open the input file
+FILE* openFile(char *fileName, char *mode)
+{
+    FILE* filePtr = fopen(fileName, mode);
+    if(filePtr == NULL)
+    {
+        perror("master: Error: Failed to open input file");
+        exit(EXIT_FAILURE);
+    }
+    return filePtr;
+}
+
+//Read the integer values from the file and save to shared memory array
+int readFile(FILE* filePtr, int shmid)
+{
+    int count;
+    //Array for the file integers attached to shared memory
+    int *integers;
+    integers = shmat(shmid, NULL, 0);
+    //Check if it returns -1
+    if(integers < 0)
+    {
+        perror("master: Error: Failed to attach to sharedmemory");
+        exit(EXIT_FAILURE);
+    } 
+
+    //Loop through the file and read the integers to the intergers array
+    int i = 0; 
+    while(!feof(filePtr))
+    {
+        fscanf(filePtr, "%d", &integers[i]);
+        printf("%d\n", integers[i]);
+        i++;
+    }
+
+    //Detach from shared memory
+    shmdt(integers);
+    return count;
+}
+ 
 
 //Shared Memory Deallocation and removal
 int deallocateMem(int shmid, void *shmaddr) 

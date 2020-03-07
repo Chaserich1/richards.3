@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
     }
     
     //Allocate the shared memory using shmget
-    sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
+    sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0666);
     
     //If shmget returns -1 then it failed
     if(sharedMemSegment == -1)
@@ -38,11 +38,7 @@ int main(int argc, char* argv[])
     {
         perror("bin_adder: Error: Failed to attach to shared memory");
         exit(EXIT_FAILURE);
-    }
-
-    //printf("ChildTest\n");  
-    for(;;)
-        ;   
+    }   
   
     //Detach from shared memory and check for it returning -1
     sharedMemDetach = deallocateMem(sharedMemSegment, sharedArr);

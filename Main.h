@@ -31,4 +31,10 @@ void processHandler(int totalInts, int n);
 //Signal Handling (ctrl c and timeout)
 void sigHandler(int sig);
 
+//Open the file and check for failure
+FILE* openFile(char *filename, char *mode);
+
+//Reading from input file and putting in shared memory
+int readFile(FILE* filePtr, int sharedMemSegment);
+
 #endif
