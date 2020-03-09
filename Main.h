@@ -13,6 +13,11 @@
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <string.h>
+#include <semaphore.h>
+#include <sys/ipc.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 
 FILE* INFILE;
 

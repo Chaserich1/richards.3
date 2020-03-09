@@ -9,8 +9,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/shm.h>
+#include <string.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <time.h>
 
 //Deallocate shared memory
 int deallocateMem(int shmid, void *shmaddr);
+
+//For the current times
+void timeSetter(char* curTime);
 
 #endif

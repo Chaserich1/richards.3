@@ -109,6 +109,17 @@ void processHandler(int totalInts, int n)
     int childExec; //For checking exec failure
     int index = 0;
     char strIndex[50]; //Convert index to char string for exec
+    //Semaphore Declarations
+    sem_t* sem;
+    char *semaphoreName = "semChild";
+
+    //Create the semaphore with starting value of 1 and check for success
+    sem = sem_open(semaphoreName, O_CREAT, 0644, 1);
+    if(sem == SEM_FAILED)
+    {
+        perror("master: Error: Unable to open semaphore");
+        exit(EXIT_FAILURE);
+    }
 
     while(completedChildren < 64)
     {
@@ -127,6 +138,7 @@ void processHandler(int totalInts, int n)
             else if(pid == 0)
             {
                 sprintf(strIndex, "%d", completedChildren);
+                printf("%s", strIndex);
                 char *args[] = {"./bin_adder", strIndex, NULL};
                 childExec = execvp(args[0], args);
 
@@ -149,7 +161,8 @@ void processHandler(int totalInts, int n)
             //printf("%d\n", completedChildren);
         }
     }
-
+    //Destroy the semaphore
+    sem_unlink(semaphoreName);
 
 }
 
@@ -205,8 +218,8 @@ int deallocateMem(int shmid, void *shmaddr)
 }
 
 /* Signal handler, that looks to see if the signal is for 2 seconds being up or ctrl-c being entered.
- *    In both cases, I connect to shared memory so that I can write the time that it is killed to the file
- *       and so that I can disconnect and remove the shared memory. */
+   In both cases, I connect to shared memory so that I can write the time that it is killed to the file
+   and so that I can disconnect and remove the shared memory. */
 void sigHandler(int sig)
 {
     if(sig == SIGALRM)
@@ -215,8 +228,9 @@ void sigHandler(int sig)
         int sharedMemSegment;
         sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
         printf("One-Hundred Seconds is up.\n"); 
-        printf("Killing children and removing shared memory.\n");
+        printf("Killing children, removing shared memory and unlinking semaphore.\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
+        sem_unlink("semChild");
         kill(0, SIGKILL);
         exit(EXIT_SUCCESS);
     }
@@ -227,8 +241,9 @@ void sigHandler(int sig)
         int sharedMemSegment;
         sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
         printf("Ctrl-c was entered\n");
-        printf("Killing children and removing shared memory.\n");
+        printf("Killing children, removing shared memory and unlinking semaphore\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
+        sem_unlink("semChild");
         kill(0, SIGKILL);
         exit(EXIT_SUCCESS);
     }

@@ -9,7 +9,10 @@ int main(int argc, char* argv[])
 {
     key_t key;
     int sharedMemSegment, sharedMemDetach;
-    
+    //Semaphore Declarations
+    sem_t *sem;
+    char *semaphoreName = "semChild";    
+ 
     //ftok gives me the key based path and 'm' id
     key = ftok(".",'m');
 
@@ -39,7 +42,36 @@ int main(int argc, char* argv[])
         perror("bin_adder: Error: Failed to attach to shared memory");
         exit(EXIT_FAILURE);
     }   
-  
+ 
+    //Open semaphore and check for failure
+    sem = sem_open(semaphoreName, 0);
+    if(sem == SEM_FAILED)
+    {
+        perror("bin_adder: Error: Failed to open semaphore");
+        exit(EXIT_FAILURE);
+    }
+
+    //Critical Section
+    int i;
+    char time[10];
+    for(i = 0; i < 5; i++)
+    {
+        sleep(rand() % 4); //sleep for somewhere between 0-3 seconds
+        timeSetter(time);
+        fprintf(stderr, "%d waiting to enter the critical section at %s\n", getpid(), time);
+        sem_wait(sem); //waiting for its time to enter critcal section
+        //Beginning Critical Section
+        timeSetter(time);
+        fprintf(stderr, "%d is inside the critical section at %s\n", getpid(), time);
+        sleep(1); //Sleep another 1 second before writing to file
+        //TO DO: Open file, write to file
+        //////////////////////////////////////////////////////////////////////
+        sleep(1); //Sleep another 1 second before leaving critical section
+        timeSetter(time);
+        fprintf(stderr, "%d is exiting the critical section at %s\n", getpid(), time);
+        sem_post(sem); //Critical section finished, signal semaphore   
+    }
+ 
     //Detach from shared memory and check for it returning -1
     sharedMemDetach = deallocateMem(sharedMemSegment, sharedArr);
     if(sharedMemDetach == -1)
@@ -59,4 +91,15 @@ int deallocateMem(int shmid, void *shmaddr)
         return -1;
     //shmctl(shmid, IPC_RMID, NULL); Don't need to remove the shared memory
     return 0;
+}
+
+//Set the values for the current time to be indicated on stderr
+void timeSetter(char *tStr)
+{
+    time_t ttime;
+    struct tm *timeStruct;
+    time(&ttime);
+    timeStruct = localtime(&ttime);
+    sprintf(tStr, "%02d:%02d:%02d", timeStruct-> tm_hour, timeStruct-> tm_min, timeStruct-> tm_sec);
+         
 }

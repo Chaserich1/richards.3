@@ -2,12 +2,11 @@ SHELL = /bin/sh
 
 CC = gcc
 CFLAGS = -g
-ALL_CFLAGS = -I. $(CFLAGS)
+ALL_CFLAGS = -I. -pthread $(CFLAGS)
 TARGET1 = master
 TARGET2 = bin_adder
 OBJS1 = Main.o 
 OBJS2 = ChildProcess.o 
-MATH_FLAG = -lm
 
 all: $(TARGET1) $(TARGET2)
 
@@ -15,7 +14,7 @@ $(TARGET1): $(OBJS1)
 	$(CC) $(ALL_CFLAGS) -o $@ $(OBJS1)
 
 $(TARGET2): $(OBJS2)
-	$(CC) $(ALL_CFLAGS) -o $@ $(OBJS2) $(MATH_FLAG)
+	$(CC) $(ALL_CFLAGS) -o $@ $(OBJS2)
 
 .c.o:
 	$(CC) $(ALL_CFLAGS) -c $<
