@@ -37,9 +37,9 @@ void processHandler(int totalInts, int n);
 void sigHandler(int sig);
 
 //Open the file and check for failure
-FILE* openFile(char *filename, char *mode);
+FILE* openFile(char *filename, char *mode, int n);
 
 //Reading from input file and putting in shared memory
-int readFile(FILE* filePtr, int sharedMemSegment);
+int readFile(char *fileName, int sharedMemSegment, int n);
 
 #endif

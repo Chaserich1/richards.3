@@ -51,6 +51,11 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
+    int index = atoi(argv[1]);
+    int count = atoi(argv[2]);
+
+    printf("%d %d\n", index, count);
+
     //Critical Section
     int i;
     char time[10];

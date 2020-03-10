@@ -42,14 +42,13 @@ int main(int argc, char* argv[])
 
     sharedMemoryWork(totalInts, n, inFile);
 
-    
-
 }
 
 void sharedMemoryWork(int totalInts, int n, char *inFile)
 {
     key_t key;
     int sharedMemSegment, sharedMemDetach;
+    int totalInts1;
 
     //Key returns a key based on the path and id
     key = ftok(".",'m');
@@ -80,11 +79,11 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     }
 
     //Open the input file using the function that checks for failure
-    INFILE = openFile(inFile, "r"); 
+    INFILE = openFile(inFile, "r", n); 
 
     //Read the input file to shared memory
-    totalInts = readFile(INFILE, sharedMemSegment);
-   
+    totalInts = readFile(inFile, sharedMemSegment, n);
+
     //printf("%d %d\n", totalInts, n);
     processHandler(totalInts, n);
 
@@ -108,7 +107,8 @@ void processHandler(int totalInts, int n)
     int status;
     int childExec; //For checking exec failure
     int index = 0;
-    char strIndex[50]; //Convert index to char string for exec
+    char xx[20]; //Convert index to char string for exec
+    char yy[20];
     //Semaphore Declarations
     sem_t* sem;
     char *semaphoreName = "semChild";
@@ -121,9 +121,9 @@ void processHandler(int totalInts, int n)
         exit(EXIT_FAILURE);
     }
 
-    while(completedChildren < 64)
+    while(completedChildren < n)
     {
-        if(runningChildren < 20 && childCounter < 64)
+        if(runningChildren < 20 && childCounter < n)
         {
             //Fork
             pid = fork();
@@ -137,9 +137,9 @@ void processHandler(int totalInts, int n)
             //Fork returns 0 if it is successful
             else if(pid == 0)
             {
-                sprintf(strIndex, "%d", completedChildren);
-                printf("%s", strIndex);
-                char *args[] = {"./bin_adder", strIndex, NULL};
+                sprintf(xx, "%d", childCounter);
+                sprintf(yy, "%d", totalInts);
+                char *args[] = {"./bin_adder", xx, yy, NULL};
                 childExec = execvp(args[0], args);
 
                 //If exec fails it returns -1 so perror and exit
@@ -147,7 +147,8 @@ void processHandler(int totalInts, int n)
                 {
                     perror("master: Error: Child failed to exec");
                     exit(EXIT_FAILURE);
-                }                                   
+                } 
+                                                 
             }
             childCounter++;
         }
@@ -167,21 +168,41 @@ void processHandler(int totalInts, int n)
 }
 
 //Open the input file
-FILE* openFile(char *fileName, char *mode)
+FILE* openFile(char *fileName, char *mode, int n)
 {
-    FILE* filePtr = fopen(fileName, mode);
+    FILE* filePtr = fopen(fileName, "w");
     if(filePtr == NULL)
     {
         perror("master: Error: Failed to open input file");
         exit(EXIT_FAILURE);
     }
+   
+    //Generate the random values for the input file between 0-256
+    srand(time(0));
+    int i;
+    for(i = 0; i < n; i++)
+    {
+        int randValue;
+        randValue = (rand() % (256 - 0 + 1) + 0);
+        fprintf(filePtr, "%d\n", randValue);
+    }
+    fclose(filePtr);
+ 
     return filePtr;
 }
 
 //Read the integer values from the file and save to shared memory array
-int readFile(FILE* filePtr, int shmid)
+int readFile(char *fileName, int shmid, int n)
 {
-    int count;
+    //Open the file and check for failure
+    FILE* filePtr = fopen(fileName, "r");
+    if(filePtr == NULL)
+    {
+        perror("master: Error: Failed to open input file");
+        exit(EXIT_FAILURE);
+    }
+
+    int count = 0;
     //Array for the file integers attached to shared memory
     int *integers;
     integers = shmat(shmid, NULL, 0);
@@ -193,14 +214,15 @@ int readFile(FILE* filePtr, int shmid)
     } 
 
     //Loop through the file and read the integers to the intergers array
-    int i = 0; 
-    while(!feof(filePtr))
+    int i; 
+    for(i = 0; i < n; i++)
     {
         fscanf(filePtr, "%d", &integers[i]);
         printf("%d\n", integers[i]);
-        i++;
-    }
+        count++;
+    } 
 
+    fclose(filePtr);
     //Detach from shared memory
     shmdt(integers);
     return count;
