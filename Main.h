@@ -6,6 +6,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include "SharedMemStruct.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,5 +43,8 @@ FILE* openFile(char *filename, char *mode, int n);
 
 //Reading from input file and putting in shared memory
 int readFile(char *fileName, int sharedMemSegment, int n);
+
+//Write PID Index Size
+void writeLogHeaders();
 
 #endif

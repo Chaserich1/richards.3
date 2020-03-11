@@ -9,9 +9,6 @@ int main(int argc, char* argv[])
 {
     key_t key;
     int sharedMemSegment, sharedMemDetach;
-    //Semaphore Declarations
-    sem_t *sem;
-    char *semaphoreName = "semChild";    
  
     //ftok gives me the key based path and 'm' id
     key = ftok(".",'m');
@@ -24,7 +21,7 @@ int main(int argc, char* argv[])
     }
     
     //Allocate the shared memory using shmget
-    sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0666);
+    sharedMemSegment = shmget(key, sizeof(struct sharedMemory), IPC_CREAT | 0666);
     
     //If shmget returns -1 then it failed
     if(sharedMemSegment == -1)
@@ -34,15 +31,41 @@ int main(int argc, char* argv[])
     }
     
     //Attach to the shared memory segment
-    int *sharedArr = (int *)shmat(sharedMemSegment, (void *)0, 0);
+    smPtr = shmat(sharedMemSegment, (void *)0, 0);
 
     //Check if it returns -1
-    if(sharedArr == (void *) -1)
+    if(smPtr == (void *) -1)
     {
         perror("bin_adder: Error: Failed to attach to shared memory");
         exit(EXIT_FAILURE);
     }   
  
+    int index = atoi(argv[1]);
+    int count = atoi(argv[2]);
+
+    printf("%d, %d, %d\n", index, count, smPtr-> integers[index]);
+    
+    firstCriticalSection(index, count);  
+
+    //Detach from shared memory and check for it returning -1
+    sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);
+    if(sharedMemDetach == -1)
+    {
+        perror("bin_adder: Error: Failed to detach shared memory");
+        exit(EXIT_FAILURE);
+    }
+    return 0;
+}
+
+// n/2 partition and critical section
+void firstCriticalSection(int index, int count)
+{
+    FILE* file;
+    file = fopen("adder_log", "a");
+    
+    //Semaphore Declarations
+    sem_t *sem;
+    char *semaphoreName = "semChild";
     //Open semaphore and check for failure
     sem = sem_open(semaphoreName, 0);
     if(sem == SEM_FAILED)
@@ -51,10 +74,6 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    int index = atoi(argv[1]);
-    int count = atoi(argv[2]);
-
-    printf("%d %d\n", index, count);
 
     //Critical Section
     int i;
@@ -70,22 +89,12 @@ int main(int argc, char* argv[])
         fprintf(stderr, "%d is inside the critical section at %s\n", getpid(), time);
         sleep(1); //Sleep another 1 second before writing to file
         //TO DO: Open file, write to file
-        //////////////////////////////////////////////////////////////////////
+            
         sleep(1); //Sleep another 1 second before leaving critical section
         timeSetter(time);
         fprintf(stderr, "%d is exiting the critical section at %s\n", getpid(), time);
         sem_post(sem); //Critical section finished, signal semaphore   
     }
- 
-    //Detach from shared memory and check for it returning -1
-    sharedMemDetach = deallocateMem(sharedMemSegment, sharedArr);
-    if(sharedMemDetach == -1)
-    {
-        perror("bin_adder: Error: Failed to detach shared memory");
-        exit(EXIT_FAILURE);
-    }
-
-    return 0;
 }
 
 //Deallocate shared memory but don't remove it

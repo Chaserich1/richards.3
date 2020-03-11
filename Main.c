@@ -59,7 +59,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     }
 
     //Allocate the shared memory using shmget
-    sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0666);
+    sharedMemSegment = shmget(key, sizeof(struct sharedMemory), IPC_CREAT | 0666);
     
     //If shmget is unsuccessful it retruns -1 so check for this
     if(sharedMemSegment == -1) 
@@ -69,10 +69,10 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     }
 
     //Attach to shared memory segment
-    int *intArray = (int *)shmat(sharedMemSegment, (void *)0, 0);
+    smPtr = shmat(sharedMemSegment, (void *)0, 0);
     
     //If shmat returns -1 then it failed to attach
-    if(intArray == (void *)-1)
+    if(smPtr == (void *)-1)
     {
         perror("master: Error: Failed to attach shared memory for integer array");
         exit(EXIT_FAILURE);
@@ -84,11 +84,13 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     //Read the input file to shared memory
     totalInts = readFile(inFile, sharedMemSegment, n);
 
+    writeLogHeaders();
+
     //printf("%d %d\n", totalInts, n);
     processHandler(totalInts, n);
 
     //Detach and Remove Shared Memory
-    sharedMemDetach = deallocateMem(sharedMemSegment, intArray); 
+    sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr); 
     
     //Check for shared memory detach to return -1
     if(sharedMemDetach == -1)
@@ -120,7 +122,9 @@ void processHandler(int totalInts, int n)
         perror("master: Error: Unable to open semaphore");
         exit(EXIT_FAILURE);
     }
-
+   
+    
+ 
     while(completedChildren < n)
     {
         if(runningChildren < 20 && childCounter < n)
@@ -217,17 +221,30 @@ int readFile(char *fileName, int shmid, int n)
     int i; 
     for(i = 0; i < n; i++)
     {
-        fscanf(filePtr, "%d", &integers[i]);
-        printf("%d\n", integers[i]);
+        fscanf(filePtr, "%d", &smPtr-> integers[i]);
+        //printf("%d\n", smPtr-> integers[i]);
         count++;
     } 
 
     fclose(filePtr);
     //Detach from shared memory
-    shmdt(integers);
+    shmdt((void*) smPtr);
     return count;
 }
- 
+
+void writeLogHeaders()
+{
+    FILE* logFile = fopen("adder_log", "a");
+    if(logFile == NULL)
+    {
+        perror("master: Error: failed to open adder_log file");
+        exit(EXIT_FAILURE);
+    }
+    
+    fprintf(logFile, "\n----------------------------------------------------\n");
+    fprintf(logFile, "\tPID\t\tIndex\t\tSize\n");
+    fclose(logFile); 
+} 
 
 //Shared Memory Deallocation and removal
 int deallocateMem(int shmid, void *shmaddr) 
