@@ -22,6 +22,7 @@
 #include <sys/wait.h>
 
 FILE* INFILE;
+int calculationFlg;
 
 //Contains Help Message
 void displayHelpMessage();
@@ -34,6 +35,10 @@ void sharedMemoryWork(int totalInts, int n, char *inFile);
 
 //Handling the fork and exec
 void processHandler(int totalInts, int n);
+
+// n/2 and nlog(n) functions
+void calculationOne(int totalInts, int n);
+void calculationTwo(int totalInts, int n);
 
 //Signal Handling (ctrl c and timeout)
 void sigHandler(int sig);

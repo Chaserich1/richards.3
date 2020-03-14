@@ -69,7 +69,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     }
 
     //Attach to shared memory segment
-    smPtr = shmat(sharedMemSegment, (void *)0, 0);
+    smPtr = (struct sharedMemory *)shmat(sharedMemSegment, (void *)0, 0);
     
     //If shmat returns -1 then it failed to attach
     if(smPtr == (void *)-1)
@@ -82,11 +82,8 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     INFILE = openFile(inFile, "r", n); 
 
     //Read the input file to shared memory
-    totalInts = readFile(inFile, sharedMemSegment, n);
+    totalInts = readFile(inFile, sharedMemSegment, n);    
 
-    writeLogHeaders();
-
-    //printf("%d %d\n", totalInts, n);
     processHandler(totalInts, n);
 
     //Detach and Remove Shared Memory
@@ -102,13 +99,31 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
 
 void processHandler(int totalInts, int n)
 {
+    calculationFlg = 0; 
+    
+    if(calculationFlg == 0)
+    {
+        writeLogHeaders();
+        calculationOne(totalInts, n);
+    } 
+    if(calculationFlg == 1)
+    {
+        writeLogHeaders();
+        calculationTwo(totalInts, n);
+    }
+}
+
+// n/2 calculation
+void calculationOne(int totalInts, int n)
+{
     int completedChildren = 0; //Completed child processes
     int runningChildren = 0; //Children in system
     int childCounter = 0;
+    int index = 0;
+    int numIntsToAdd = 2;
     pid_t pid, waitingID;
     int status;
     int childExec; //For checking exec failure
-    int index = 0;
     char xx[20]; //Convert index to char string for exec
     char yy[20];
     //Semaphore Declarations
@@ -121,17 +136,16 @@ void processHandler(int totalInts, int n)
     {
         perror("master: Error: Unable to open semaphore");
         exit(EXIT_FAILURE);
-    }
-   
+    } 
     
- 
-    while(completedChildren < n)
+    //if the number of integers to add is greater than the total and there are no more running children 
+    while(calculationFlg == 0)
     {
-        if(runningChildren < 20 && childCounter < n)
+        //If there are less than 20 children, index & children & finished children are less than the total ints in the file
+        if(runningChildren < 20 && childCounter < totalInts && completedChildren < totalInts && index < totalInts && calculationFlg == 0)
         {
             //Fork
             pid = fork();
-            runningChildren++;
             //Check for fork failure if it returns -1
             if(pid == -1)
             {
@@ -141,8 +155,9 @@ void processHandler(int totalInts, int n)
             //Fork returns 0 if it is successful
             else if(pid == 0)
             {
-                sprintf(xx, "%d", childCounter);
-                sprintf(yy, "%d", totalInts);
+                //Pass the index and the number of ints to add as a string through exec
+                sprintf(xx, "%d", index);
+                sprintf(yy, "%d", numIntsToAdd);
                 char *args[] = {"./bin_adder", xx, yy, NULL};
                 childExec = execvp(args[0], args);
 
@@ -154,21 +169,48 @@ void processHandler(int totalInts, int n)
                 } 
                                                  
             }
-            childCounter++;
+            runningChildren++; //Add to number of running children
+            childCounter++; //We've done another child
+            index += numIntsToAdd; //index is index plus the number of ints to add
         }
         
+        //Wait for the child to finish and make sure it's greater than 0
         waitingID = waitpid(-1, &status, WNOHANG);
 
         if(waitingID > 0)
         {
-            completedChildren++;
-            runningChildren--;
-            //printf("%d\n", completedChildren);
+            completedChildren++; //A child has completed
+            runningChildren--; //One less child in the system
+            
+            //if the index is greater than or equal to the total ints in the file
+            if(index >= totalInts)
+            {
+                /*if the number of integers we execed to add is more than total
+                  ints in file and active children is 0 then we are done and can
+                  set the calculation flg to 1 to move onto nlog(n) */
+                if(numIntsToAdd >= totalInts && runningChildren == 0)
+                {    
+                    calculationFlg = 1;
+                }
+                /*if there are no more active children then set index
+                  to zero and numbers to add doubles */
+                if(runningChildren == 0)
+                {
+                    index = 0;
+                    numIntsToAdd *= 2;
+                }
+            }
         }
     }
     //Destroy the semaphore
     sem_unlink(semaphoreName);
 
+}
+
+// nlog(n) calculation
+void calculationTwo(int totalInts, int n)
+{
+    printf("Calculation two");
 }
 
 //Open the input file
@@ -240,9 +282,14 @@ void writeLogHeaders()
         perror("master: Error: failed to open adder_log file");
         exit(EXIT_FAILURE);
     }
-    
-    fprintf(logFile, "\n----------------------------------------------------\n");
-    fprintf(logFile, "\tPID\t\tIndex\t\tSize\n");
+
+    if(calculationFlg == 0)
+         fprintf(logFile, " n/2 pairs");
+    else
+         fprintf(logFile, "\n\n n/logn groups");
+     
+    fprintf(logFile, "\n----------------------------------------------------------------------\n");
+    fprintf(logFile, "\tPID\t\tIndex\t\tSize\t\tResult\n");
     fclose(logFile); 
 } 
 

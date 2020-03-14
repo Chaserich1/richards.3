@@ -41,11 +41,11 @@ int main(int argc, char* argv[])
     }   
  
     int index = atoi(argv[1]);
-    int count = atoi(argv[2]);
+    int numIntsToAdd = atoi(argv[2]);
 
-    printf("%d, %d, %d\n", index, count, smPtr-> integers[index]);
+    //printf("%d, %d, %d\n", index, numIntsToAdd, smPtr-> integers[index]);
     
-    firstCriticalSection(index, count);  
+    firstCriticalSection(index, numIntsToAdd);  
 
     //Detach from shared memory and check for it returning -1
     sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 }
 
 // n/2 partition and critical section
-void firstCriticalSection(int index, int count)
+void firstCriticalSection(int index, int numIntsToAdd)
 {
     FILE* file;
     file = fopen("adder_log", "a");
@@ -74,11 +74,17 @@ void firstCriticalSection(int index, int count)
         exit(EXIT_FAILURE);
     }
 
+    int i;
+    for(i = 1; i < numIntsToAdd; i++)
+    {
+        smPtr-> integers[index] += smPtr-> integers[index + i];
+        smPtr-> integers[index + i] = 0;
+    }
 
     //Critical Section
-    int i;
+    int k;
     char time[10];
-    for(i = 0; i < 5; i++)
+    for(k = 0; k < numIntsToAdd / 2; k++)
     {
         sleep(rand() % 4); //sleep for somewhere between 0-3 seconds
         timeSetter(time);
@@ -89,7 +95,7 @@ void firstCriticalSection(int index, int count)
         fprintf(stderr, "%d is inside the critical section at %s\n", getpid(), time);
         sleep(1); //Sleep another 1 second before writing to file
         //TO DO: Open file, write to file
-            
+        fprintf(file, "\t%d\t\t%d\t\t%d\t\t%d\n", getpid(), index, numIntsToAdd, smPtr-> integers[index]);       
         sleep(1); //Sleep another 1 second before leaving critical section
         timeSetter(time);
         fprintf(stderr, "%d is exiting the critical section at %s\n", getpid(), time);
