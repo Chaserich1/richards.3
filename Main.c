@@ -81,10 +81,23 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     //Open the input file using the function that checks for failure
     INFILE = openFile(inFile, "r", n); 
 
-    //Read the input file to shared memory
-    totalInts = readFile(inFile, sharedMemSegment, n);    
+    /*Write the headers to the file, read the input file to 
+      shared memory, fork exec the children for the calculations*/
+    calculationFlg = 0;
+    if(calculationFlg == 0)
+    {
+        writeLogHeaders();
+        totalInts = readFile(inFile, sharedMemSegment, n);
+        calculationOne(totalInts, n);
+    }
+    if(calculationFlg == 1)
+    {
+        writeLogHeaders();
+        totalInts = readFile(inFile, sharedMemSegment, n);
+        calculationTwo(totalInts, n);
+    }
 
-    processHandler(totalInts, n);
+
 
     //Detach and Remove Shared Memory
     sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);     
@@ -94,22 +107,6 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     {
         perror("master: Error: shared memory detach and removal failed");
         exit(EXIT_FAILURE);
-    }
-}
-
-void processHandler(int totalInts, int n)
-{
-    calculationFlg = 0; 
-    
-    if(calculationFlg == 0)
-    {
-        writeLogHeaders();
-        calculationOne(totalInts, n);
-    } 
-    if(calculationFlg == 1)
-    {
-        writeLogHeaders();
-        calculationTwo(totalInts, n);
     }
 }
 
@@ -210,7 +207,11 @@ void calculationOne(int totalInts, int n)
 // nlog(n) calculation
 void calculationTwo(int totalInts, int n)
 {
-    printf("Calculation two");
+    printf("\nCalculation two\n");
+    int i;
+    for(i = 0; i < totalInts; i++){
+        printf("%d\n", smPtr-> integers[i]);
+    }
 }
 
 //Open the input file

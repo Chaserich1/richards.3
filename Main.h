@@ -33,9 +33,6 @@ int deallocateMem(int shmid, void *shmaddr);
 //Getting and Attaching to shared Memory
 void sharedMemoryWork(int totalInts, int n, char *inFile);
 
-//Handling the fork and exec
-void processHandler(int totalInts, int n);
-
 // n/2 and nlog(n) functions
 void calculationOne(int totalInts, int n);
 void calculationTwo(int totalInts, int n);
