@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     //If key returns -1 then it failed so check
     if(key == -1)
     {
-        perror("bin_adder: Error: Failed to get shared memory key");
+        perror("bin_adder: Error: Failed to get shared memory key stuct of ints");
         exit(EXIT_FAILURE);
     }
     
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     //If shmget returns -1 then it failed
     if(sharedMemSegment == -1)
     {
-        perror("bin_adder: Error: Failed to get shared memory segment");
+        perror("bin_adder: Error: Failed to get shared memory segment struct of ints");
         exit(EXIT_FAILURE);
     }
     
@@ -36,16 +36,43 @@ int main(int argc, char* argv[])
     //Check if it returns -1
     if(smPtr == (void *) -1)
     {
-        perror("bin_adder: Error: Failed to attach to shared memory");
+        perror("bin_adder: Error: Failed to attach to shared memory struct of ints");
         exit(EXIT_FAILURE);
     }   
+    //ftok the key and check for failure
+    key_t key1 = ftok(".", 'b');
+    if(key1 == -1)
+    {
+        perror("bin_adder: Error: Failed to get shared memory key calc array");
+        exit(EXIT_FAILURE);
+    }
+    
+    //Allocate and get the shared memory segment for the array
+    int seg = shmget(key1, sizeof(int), IPC_CREAT | 0777);
+    if(seg == -1)
+    {
+        perror("bin_adder: Error: Failed to get shared memory segment calc array");
+        exit(EXIT_FAILURE);
+    }
+
+    //Attach to shared mem seg and check for failure
+    int *calculationFlg = (int*)shmat(seg, (void*)0, 0);
+    if(calculationFlg == (void *) -1)
+    {
+        perror("bin_adder: Error: Failed to attach to shared memory calc array");
+        exit(EXIT_FAILURE);
+    } 
  
     int index = atoi(argv[1]);
     int numIntsToAdd = atoi(argv[2]);
 
     //printf("%d, %d, %d\n", index, numIntsToAdd, smPtr-> integers[index]);
     
-    firstCriticalSection(index, numIntsToAdd);  
+
+    if(calculationFlg[0] == 0) 
+        firstCriticalSection(index, numIntsToAdd);  
+    else if(calculationFlg[0] == 1)
+        secondCriticalSection(index, numIntsToAdd);
 
     //Detach from shared memory and check for it returning -1
     sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);
@@ -70,7 +97,7 @@ void firstCriticalSection(int index, int numIntsToAdd)
     sem = sem_open(semaphoreName, 0);
     if(sem == SEM_FAILED)
     {
-        perror("bin_adder: Error: Failed to open semaphore");
+        perror("bin_adder: Error: Failed to open n/2 semaphore");
         exit(EXIT_FAILURE);
     }
 
@@ -80,8 +107,8 @@ void firstCriticalSection(int index, int numIntsToAdd)
         smPtr-> integers[index] += smPtr-> integers[index + i];
         smPtr-> integers[index + i] = 0;
     }
-
-    //Critical Section
+    
+    //Critical Section One
     int k;
     char time[10];
     for(k = 0; k < numIntsToAdd / 2; k++)
@@ -100,6 +127,49 @@ void firstCriticalSection(int index, int numIntsToAdd)
         timeSetter(time);
         fprintf(stderr, "%d is exiting the critical section at %s\n", getpid(), time);
         sem_post(sem); //Critical section finished, signal semaphore   
+    }
+}
+
+void secondCriticalSection(int index, int numIntsToAdd)
+{
+    FILE* file;
+    file = fopen("adder_log", "a");
+
+    sem_t *sem1;
+    char *semaphoreName1 = "semLogChild"; 
+
+    sem1 = sem_open(semaphoreName1, 0);
+    if(sem1 == SEM_FAILED)
+    {
+        perror("bin_adder: Error: Failed to open nlogn semaphore");
+        exit(EXIT_FAILURE);
+    }
+
+    int i;
+    for(i = 1; i < numIntsToAdd; i++)
+    {
+        smPtr-> integers[index] += smPtr-> integers[index + i];
+        smPtr-> integers[index + i] = 0;
+    }
+
+    int k;
+    char time[10];
+    for(k = 0; k < numIntsToAdd / 2; k++)
+    {
+        sleep(rand() % 4); //sleep for somewhere between 0-3 seconds
+        timeSetter(time);
+        fprintf(stderr, "%d waiting to enter the critical section at %s\n", getpid(), time);
+        sem_wait(sem1); //waiting for its time to enter critcal section
+        //Beginning Critical Section
+        timeSetter(time);
+        fprintf(stderr, "%d is inside the critical section at %s\n", getpid(), time);
+        sleep(1); //Sleep another 1 second before writing to file
+        //Write to file
+        fprintf(file, "\t%d\t\t%d\t\t%d\t\t%d\n", getpid(), index, numIntsToAdd, smPtr-> integers[index]);       
+        sleep(1); //Sleep another 1 second before leaving critical section
+        timeSetter(time);
+        fprintf(stderr, "%d is exiting the critical section at %s\n", getpid(), time);
+        sem_post(sem1); //Critical section finished, signal semaphore   
     }
 }
 

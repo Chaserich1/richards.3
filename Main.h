@@ -23,7 +23,7 @@
 
 FILE* INFILE;
 int calculationFlg;
-
+int logCalculationFlg;
 //Contains Help Message
 void displayHelpMessage();
 
@@ -34,8 +34,8 @@ int deallocateMem(int shmid, void *shmaddr);
 void sharedMemoryWork(int totalInts, int n, char *inFile);
 
 // n/2 and nlog(n) functions
-void calculationOne(int totalInts, int n);
-void calculationTwo(int totalInts, int n);
+int calculationOne(int, int);
+int calculationTwo(int, int);
 
 //Signal Handling (ctrl c and timeout)
 void sigHandler(int sig);
@@ -47,6 +47,6 @@ FILE* openFile(char *filename, char *mode, int n);
 int readFile(char *fileName, int sharedMemSegment, int n);
 
 //Write PID Index Size
-void writeLogHeaders();
+void writeLogHeaders(int);
 
 #endif
