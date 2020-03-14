@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
     int sharedMemSegment, sharedMemDetach;
  
     //ftok gives me the key based path and 'm' id
-    key = ftok(".",'m');
+    key = ftok(".",'a');
 
     //If key returns -1 then it failed so check
     if(key == -1)

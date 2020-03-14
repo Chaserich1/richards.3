@@ -51,7 +51,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     int totalInts1;
 
     //Key returns a key based on the path and id
-    key = ftok(".",'m');
+    key = ftok(".",'a');
     if(key == -1)
     {
         perror("master: Error: getting the shared memory key");
@@ -87,7 +87,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     processHandler(totalInts, n);
 
     //Detach and Remove Shared Memory
-    sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr); 
+    sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);     
     
     //Check for shared memory detach to return -1
     if(sharedMemDetach == -1)
@@ -296,9 +296,8 @@ void writeLogHeaders()
 //Shared Memory Deallocation and removal
 int deallocateMem(int shmid, void *shmaddr) 
 {
-    //If detaching fails it will return -1 so return -1 for deallocation call
-    if(shmdt(shmaddr) == -1)
-        return -1;
+    //Detach and remove shared memory
+    shmdt(shmaddr);
     shmctl(shmid, IPC_RMID, NULL);
     return 0;
 }
@@ -310,9 +309,9 @@ void sigHandler(int sig)
 {
     if(sig == SIGALRM)
     {
-        key_t key = ftok(".",'m');
+        key_t key = ftok(".",'a');
         int sharedMemSegment;
-        sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
+        sharedMemSegment = shmget(key, sizeof(struct sharedMemory), IPC_CREAT | 0666);
         printf("One-Hundred Seconds is up.\n"); 
         printf("Killing children, removing shared memory and unlinking semaphore.\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
@@ -323,9 +322,9 @@ void sigHandler(int sig)
     
     if(sig == SIGINT)
     {
-        key_t key = ftok(".",'m');
+        key_t key = ftok(".",'a');
         int sharedMemSegment;
-        sharedMemSegment = shmget(key, sizeof(int), IPC_CREAT | 0644);
+        sharedMemSegment = shmget(key, sizeof(struct sharedMemory), IPC_CREAT | 0666);
         printf("Ctrl-c was entered\n");
         printf("Killing children, removing shared memory and unlinking semaphore\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);

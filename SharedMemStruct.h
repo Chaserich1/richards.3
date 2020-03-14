@@ -6,7 +6,6 @@
 struct sharedMemory
 {
     int integers[64];
-    int calculationFlg[2];
 };
 
 struct sharedMemory *smPtr;
