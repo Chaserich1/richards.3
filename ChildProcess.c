@@ -120,7 +120,7 @@ void firstCriticalSection(int index, int numIntsToAdd)
     fprintf(stderr, "%d is inside the critical section at %s\n", getpid(), time);
     sleep(1);
     //Write to output log file
-    fprintf(file, "\t%d\t\t%d\t\t%d\t\t%d\n", getpid(), index, numIntsToAdd, smPtr-> integersOne[index]);       
+    fprintf(file, "\t%d\t\t%d\t\t%d\t\t%d\t\t%s\n", getpid(), index, numIntsToAdd, smPtr-> integersOne[index], time);       
     sleep(1); //Sleep another 1 second before leaving critical section
     timeSetter(time);
     fprintf(stderr, "%d is exiting the critical section at %s\n", getpid(), time);
@@ -161,7 +161,7 @@ void secondCriticalSection(int index, int numIntsToAdd)
     fprintf(stderr, "%d is inside the critical section at %s\n", getpid(), time);
     sleep(1); //Sleep another 1 second before writing to file
     //Write to file
-    fprintf(file, "\t%d\t\t%d\t\t%d\t\t%d\n", getpid(), index, numIntsToAdd, smPtr-> integersTwo[index]);       
+    fprintf(file, "\t%d\t\t%d\t\t%d\t\t%d\t\t%s\n", getpid(), index, numIntsToAdd, smPtr-> integersTwo[index], time);       
     sleep(1); //Sleep another 1 second before leaving critical section
     timeSetter(time);
     fprintf(stderr, "%d is exiting the critical section at %s\n", getpid(), time);

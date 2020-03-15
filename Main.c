@@ -469,7 +469,7 @@ void writeLogHeaders(calcFlg)
          fprintf(logFile, "\n\n n/logn groups");
      
     fprintf(logFile, "\n----------------------------------------------------------------------\n");
-    fprintf(logFile, "\tPID\t\tIndex\t\tSize\t\tResult\n");
+    fprintf(logFile, "\tPID\t\tIndex\t\tSize\t\tResult\t\tTime\n");
     fclose(logFile); 
 } 
 
