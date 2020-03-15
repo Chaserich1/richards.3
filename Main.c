@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
     /* Signal for terminating, freeing up shared mem, killing all children 
        if the program goes for more than two seconds of real clock */
     signal(SIGALRM, sigHandler);
-    alarm(200);
+    alarm(t);
 
     /* Signal for terminating, freeing up shared mem, killing all 
        children if the user enters ctrl-c */
@@ -263,7 +263,8 @@ int calculationTwo(int totalInts, int newCalcFlg)
     int runningChildren = 0; //Children in system
     int childCounter = 0;
     int index = 0;
-    int numIntsToAdd = round(totalInts/log2(totalInts + 1));
+    int numIntsToAdd = ceil(log(totalInts));
+    int temp = totalInts/(ceil(log(totalInts)));
     pid_t pid, waitingID;
     int status;
     int childExec; //For checking exec failure
