@@ -11,8 +11,9 @@ int main(int argc, char* argv[])
     char *inFile = "input.dat"; //Default inputfile name
     int n = 1; //Max Children in system at once
     int totalInts = 0;
+    int t = 100;
 
-    while((c = getopt(argc, argv, "hf:n:")) != -1)
+    while((c = getopt(argc, argv, "hf:n:t:")) != -1)
     {
         switch(c)
         {
@@ -25,6 +26,9 @@ int main(int argc, char* argv[])
             case 'n':
                 n = atoi(optarg);
                 break;
+            case 't':
+                t = atoi(optarg);
+                break;
             default:
                 printf("Using default values");
                 break;               
@@ -34,7 +38,7 @@ int main(int argc, char* argv[])
     /* Signal for terminating, freeing up shared mem, killing all children 
        if the program goes for more than two seconds of real clock */
     signal(SIGALRM, sigHandler);
-    alarm(100);
+    alarm(200);
 
     /* Signal for terminating, freeing up shared mem, killing all 
        children if the user enters ctrl-c */
@@ -54,7 +58,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     key = ftok(".",'a');
     if(key == -1)
     {
-        perror("master: Error: getting the shared memory key");
+        perror("master: Error: getting the shared memory key struct int array");
         exit(EXIT_FAILURE);
     }
 
@@ -64,7 +68,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     //If shmget is unsuccessful it retruns -1 so check for this
     if(sharedMemSegment == -1) 
     {
-        perror("master: Error: shmget failed to allocate shared memory");
+        perror("master: Error: shmget failed to allocate shared memory struct int array");
         exit(EXIT_FAILURE);
     }
 
@@ -74,27 +78,72 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     //If shmat returns -1 then it failed to attach
     if(smPtr == (void *)-1)
     {
-        perror("master: Error: Failed to attach shared memory for integer array");
+        perror("master: Error: Failed to attach shared memory for struct int array");
+        exit(EXIT_FAILURE);
+    }
+    
+    //ftok the key
+    key_t key1 = ftok(".", 'b');
+    //If key returns -1 then it failed so check
+    if(key1 == -1)
+    {
+        perror("bin_adder: Error: Failed to get shared memory key calc array");
+        exit(EXIT_FAILURE);
+    }
+    //Get the segment for the array
+    int seg = shmget(key1, sizeof(int), IPC_CREAT | 0777);
+    //If shmget returns -1 it failed
+    if(seg == -1)
+    {
+        perror("bin_adder: Error: Failed to get shared memory segment calc array");
         exit(EXIT_FAILURE);
     }
 
+    //Attach to shared memory and check if it fails
+    int *calculationFlg = (int*)shmat(seg, (void*)0, 0);
+    if(calculationFlg == (void *) -1)
+    {
+        perror("bin_adder: Error: Failed to attach to shared memory calc array");
+        exit(EXIT_FAILURE);
+    }   
+
+    int milliSecCalc1 = 0, milliSecCalc2 = 0;
+    clock_t startCalc1, startCalc2, totalCalc1, totalCalc2;
+ 
     //Open the input file using the function that checks for failure
-    INFILE = openFile(inFile, "r", n); 
+    INFILE = openFile(inFile, "a", n); 
+    //FILE* filePtr = fopen("adder_log","a");    
 
     /*Write the headers to the file, read the input file to 
       shared memory, fork exec the children for the calculations*/
-    calculationFlg = 0;
-    if(calculationFlg == 0)
+    calculationFlg[0] = 0;
+    int calcFlg = calculationFlg[0];
+    if(calculationFlg[0] == 0)
     {
-        writeLogHeaders();
-        totalInts = readFile(inFile, sharedMemSegment, n);
-        calculationOne(totalInts, n);
+        writeLogHeaders(calcFlg);
+        totalInts = readFileOne(inFile, sharedMemSegment, n);
+        startCalc1 = clock();
+        int newCalcFlg = calculationOne(totalInts, calcFlg);
+        totalCalc1 = clock() - startCalc1;
+        milliSecCalc1 = totalCalc1 * 1000 / CLOCKS_PER_SEC;
+        FILE* filePtr = fopen("adder_log", "a");
+        fprintf(filePtr, "\nTotal Time for n/2 Calculations: %d seconds %d milliseconds\n", milliSecCalc1/1000, milliSecCalc1%1000);
+        fclose(filePtr);
+        calculationFlg[0] = newCalcFlg;
     }
-    if(calculationFlg == 1)
+
+    if(calculationFlg[0] == 1)
     {
-        writeLogHeaders();
-        totalInts = readFile(inFile, sharedMemSegment, n);
-        calculationTwo(totalInts, n);
+        int newCalcFlg = 1;
+        writeLogHeaders(newCalcFlg);
+        totalInts = readFileTwo(inFile, sharedMemSegment, n);
+        startCalc2 = clock();
+        calculationTwo(totalInts, newCalcFlg);
+        totalCalc2 = clock() - startCalc2;
+        milliSecCalc2 = totalCalc2 * 1000 / CLOCKS_PER_SEC;
+        FILE* filePtr = fopen("adder_log", "a");
+        fprintf(filePtr, "\nTotal Time for n/2 Calculations: %d seconds %d milliseconds\n", milliSecCalc2/1000, milliSecCalc2%1000); 
+        fclose(filePtr);
     }
 
 
@@ -111,8 +160,9 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
 }
 
 // n/2 calculation
-void calculationOne(int totalInts, int n)
+int calculationOne(int totalInts, int calcFlg)
 {
+    printf("\nn/2 pairs calculation:\n");
     int completedChildren = 0; //Completed child processes
     int runningChildren = 0; //Children in system
     int childCounter = 0;
@@ -131,15 +181,15 @@ void calculationOne(int totalInts, int n)
     sem = sem_open(semaphoreName, O_CREAT, 0644, 1);
     if(sem == SEM_FAILED)
     {
-        perror("master: Error: Unable to open semaphore");
+        perror("master: Error: Unable to open n/2 semaphore");
         exit(EXIT_FAILURE);
     } 
     
     //if the number of integers to add is greater than the total and there are no more running children 
-    while(calculationFlg == 0)
+    while(calcFlg == 0)
     {
         //If there are less than 20 children, index & children & finished children are less than the total ints in the file
-        if(runningChildren < 20 && childCounter < totalInts && completedChildren < totalInts && index < totalInts && calculationFlg == 0)
+        if(runningChildren < 20 && childCounter < totalInts && completedChildren < totalInts && index < totalInts && calcFlg == 0)
         {
             //Fork
             pid = fork();
@@ -169,6 +219,7 @@ void calculationOne(int totalInts, int n)
             runningChildren++; //Add to number of running children
             childCounter++; //We've done another child
             index += numIntsToAdd; //index is index plus the number of ints to add
+            //printf("Index: %d\n", index);
         }
         
         //Wait for the child to finish and make sure it's greater than 0
@@ -187,7 +238,7 @@ void calculationOne(int totalInts, int n)
                   set the calculation flg to 1 to move onto nlog(n) */
                 if(numIntsToAdd >= totalInts && runningChildren == 0)
                 {    
-                    calculationFlg = 1;
+                    calcFlg = 1;
                 }
                 /*if there are no more active children then set index
                   to zero and numbers to add doubles */
@@ -201,19 +252,111 @@ void calculationOne(int totalInts, int n)
     }
     //Destroy the semaphore
     sem_unlink(semaphoreName);
-
+    return calcFlg;
 }
 
 // nlog(n) calculation
-void calculationTwo(int totalInts, int n)
+int calculationTwo(int totalInts, int newCalcFlg)
 {
-    printf("\nCalculation two\n");
-    int i;
-    for(i = 0; i < totalInts; i++){
-        printf("%d\n", smPtr-> integers[i]);
-    }
-}
+    printf("\nn/logn groups calculation:\n");
+    int completedChildren = 0; //Completed child processes
+    int runningChildren = 0; //Children in system
+    int childCounter = 0;
+    int index = 0;
+    int numIntsToAdd = round(totalInts/log2(totalInts + 1));
+    pid_t pid, waitingID;
+    int status;
+    int childExec; //For checking exec failure
+    char xx[20]; //Convert index to char string for exec
+    char yy[20];
+    //Semaphore Declarations
+    sem_t* sem1;
+    char *semaphoreName1 = "semLogChild";
 
+    //Create the semaphore with starting value of 1 and check for success
+    sem1 = sem_open(semaphoreName1, O_CREAT, 0744, 1);
+    if(sem1 == SEM_FAILED)
+    {
+        perror("master: Error: Unable to open nlogn semaphore");
+        exit(EXIT_FAILURE);
+    } 
+       
+    //if the number of integers to add is greater than the total and there are no more running children 
+    while(newCalcFlg == 1)
+    {
+        /*If there are less than 20 children, index & children 
+          & finished children are less than the total ints in the file*/
+        if(runningChildren < 20 && childCounter < totalInts && completedChildren < totalInts && index < totalInts && newCalcFlg == 1)
+        {
+            //Fork
+            pid = fork();
+            //Check for fork failure if it returns -1
+            if(pid == -1)
+            {
+                perror("master: Error: Failed to fork");
+                exit(EXIT_FAILURE);
+            }
+            //Fork returns 0 if it is successful
+            else if(pid == 0)
+            {
+                int logIntsToAdd;
+                if((index + numIntsToAdd) > totalInts)
+                    logIntsToAdd = totalInts - index;
+                else
+                    logIntsToAdd = numIntsToAdd;
+                //Pass the index and the number of ints to add as a string through exec
+                sprintf(xx, "%d", index);
+                sprintf(yy, "%d", logIntsToAdd);
+                char *args[] = {"./bin_adder", xx, yy, NULL};
+                childExec = execvp(args[0], args);
+
+                //If exec fails it returns -1 so perror and exit
+                if(childExec == -1)
+                {
+                    perror("master: Error: Child failed to exec");
+                    exit(EXIT_FAILURE);
+                } 
+                                                 
+            }
+            runningChildren++; //Add to number of running children
+            childCounter++; //We've done another child
+            index += numIntsToAdd; //index is index plus the number of ints to add
+        }
+        
+        //Wait for the child to finish and make sure it's greater than 0
+        waitingID = waitpid(-1, &status, WNOHANG);
+
+        if(waitingID > 0)
+        {
+            completedChildren++; //A child has completed
+            runningChildren--; //One less child in the system
+            
+            //if the index is greater than or equal to the total ints in the file
+            if(index >= totalInts)
+            {
+                /*if the number of integers we execed to add is more than total
+                  ints in file and active children is 0 then we are done and ca
+                  set the calculation flg to 1 to move onto nlog(n) */
+                if(numIntsToAdd >= totalInts && runningChildren == 0)
+                {    
+                    newCalcFlg = 2;
+                }
+                /*if there are no more active children then set index
+                  to zero and numbers to add doubles */
+                if(runningChildren == 0)
+                {
+                    index = 0;
+                    numIntsToAdd *= 2;
+                }
+            }
+        }
+    }
+    //Destroy the semaphore
+    sem_unlink(semaphoreName1);
+    return newCalcFlg; 
+
+}    
+    
 //Open the input file
 FILE* openFile(char *fileName, char *mode, int n)
 {
@@ -239,7 +382,7 @@ FILE* openFile(char *fileName, char *mode, int n)
 }
 
 //Read the integer values from the file and save to shared memory array
-int readFile(char *fileName, int shmid, int n)
+int readFileOne(char *fileName, int shmid, int n)
 {
     //Open the file and check for failure
     FILE* filePtr = fopen(fileName, "r");
@@ -251,10 +394,10 @@ int readFile(char *fileName, int shmid, int n)
 
     int count = 0;
     //Array for the file integers attached to shared memory
-    int *integers;
-    integers = shmat(shmid, NULL, 0);
+    int *integersOne;
+    integersOne = shmat(shmid, NULL, 0);
     //Check if it returns -1
-    if(integers < 0)
+    if(integersOne < 0)
     {
         perror("master: Error: Failed to attach to sharedmemory");
         exit(EXIT_FAILURE);
@@ -264,18 +407,54 @@ int readFile(char *fileName, int shmid, int n)
     int i; 
     for(i = 0; i < n; i++)
     {
-        fscanf(filePtr, "%d", &smPtr-> integers[i]);
+        fscanf(filePtr, "%d", &smPtr-> integersOne[i]);
+        count++;
+    } 
+
+    fclose(filePtr);
+    //Detach from shared memory
+    shmdt((void*) integersOne);
+    return count;
+}
+
+//Read the integer values from the file and save to shared memory array
+int readFileTwo(char *fileName, int shmid, int n)
+{
+    //Open the file and check for failure
+    FILE* filePtr = fopen(fileName, "r");
+    if(filePtr == NULL)
+    {
+        perror("master: Error: Failed to open input file");
+        exit(EXIT_FAILURE);
+    }
+
+    int count = 0;
+    //Array for the file integers attached to shared memory
+    int *integersTwo;
+    integersTwo = shmat(shmid, NULL, 0);
+    //Check if it returns -1
+    if(integersTwo < 0)
+    {
+        perror("master: Error: Failed to attach to sharedmemory");
+        exit(EXIT_FAILURE);
+    } 
+
+    //Loop through the file and read the integers to the intergers array
+    int i; 
+    for(i = 0; i < n; i++)
+    {
+        fscanf(filePtr, "%d", &smPtr-> integersTwo[i]);
         //printf("%d\n", smPtr-> integers[i]);
         count++;
     } 
 
     fclose(filePtr);
     //Detach from shared memory
-    shmdt((void*) smPtr);
+    shmdt((void*) integersTwo);
     return count;
 }
 
-void writeLogHeaders()
+void writeLogHeaders(calcFlg)
 {
     FILE* logFile = fopen("adder_log", "a");
     if(logFile == NULL)
@@ -284,7 +463,7 @@ void writeLogHeaders()
         exit(EXIT_FAILURE);
     }
 
-    if(calculationFlg == 0)
+    if(calcFlg == 0)
          fprintf(logFile, " n/2 pairs");
     else
          fprintf(logFile, "\n\n n/logn groups");
@@ -317,6 +496,7 @@ void sigHandler(int sig)
         printf("Killing children, removing shared memory and unlinking semaphore.\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
         sem_unlink("semChild");
+        sem_unlink("semLogChild");
         kill(0, SIGKILL);
         exit(EXIT_SUCCESS);
     }
@@ -330,6 +510,7 @@ void sigHandler(int sig)
         printf("Killing children, removing shared memory and unlinking semaphore\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
         sem_unlink("semChild");
+        sem_unlink("semLogChild");
         kill(0, SIGKILL);
         exit(EXIT_SUCCESS);
     }

@@ -7,7 +7,6 @@
 #define CHILDPROCESS_H
 
 #include "SharedMemStruct.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/shm.h>
@@ -23,6 +22,6 @@ int deallocateMem(int shmid, void *shmaddr);
 void timeSetter(char* curTime);
 
 //n/2 critical and calc
-void firstCriticalSection(int index, int count);
-
+void firstCriticalSection(int, int);
+void secondCriticalSection(int, int);
 #endif

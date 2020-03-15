@@ -5,7 +5,8 @@
 
 struct sharedMemory
 {
-    int integers[64];
+    int integersOne[1024];
+    int integersTwo[1024];
 };
 
 struct sharedMemory *smPtr;

@@ -20,11 +20,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <time.h>
+#include <math.h>
 
 FILE* INFILE;
 int calculationFlg;
 
-//Contains Help Message
 void displayHelpMessage();
 
 //Detaching and removing shared memory
@@ -34,8 +35,8 @@ int deallocateMem(int shmid, void *shmaddr);
 void sharedMemoryWork(int totalInts, int n, char *inFile);
 
 // n/2 and nlog(n) functions
-void calculationOne(int totalInts, int n);
-void calculationTwo(int totalInts, int n);
+int calculationOne(int, int);
+int calculationTwo(int, int);
 
 //Signal Handling (ctrl c and timeout)
 void sigHandler(int sig);
@@ -44,9 +45,10 @@ void sigHandler(int sig);
 FILE* openFile(char *filename, char *mode, int n);
 
 //Reading from input file and putting in shared memory
-int readFile(char *fileName, int sharedMemSegment, int n);
+int readFileOne(char *fileName, int sharedMemSegment, int n);
+int readFileTwo(char *fileName, int sharedMemSegment, int n);
 
 //Write PID Index Size
-void writeLogHeaders();
+void writeLogHeaders(int);
 
 #endif
