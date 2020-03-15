@@ -353,8 +353,7 @@ int calculationTwo(int totalInts, int newCalcFlg)
     }
     //Destroy the semaphore
     sem_unlink(semaphoreName1);
-    return newCalcFlg; 
-
+    return newCalcFlg;
 }    
     
 //Open the input file

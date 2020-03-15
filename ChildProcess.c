@@ -148,7 +148,7 @@ void secondCriticalSection(int index, int numIntsToAdd)
         smPtr-> integersTwo[index] += smPtr-> integersTwo[index + i];
         smPtr-> integersTwo[index + i] = 0;
     }
-
+    
     int k;
     char time[10];
 

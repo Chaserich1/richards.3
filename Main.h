@@ -25,7 +25,8 @@
 
 FILE* INFILE;
 int calculationFlg;
-
+int logCalculationFlg;
+//Contains Help Message
 void displayHelpMessage();
 
 //Detaching and removing shared memory
