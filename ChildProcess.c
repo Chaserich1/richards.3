@@ -8,7 +8,7 @@
 int main(int argc, char* argv[])
 {
     key_t key;
-    int sharedMemSegment, sharedMemDetach;
+    int sharedMemSegment, sharedMemDetach, sharedMemDetach1;
  
     //ftok gives me the key based path and 'm' id
     key = ftok(".",'a');
@@ -76,7 +76,8 @@ int main(int argc, char* argv[])
 
     //Detach from shared memory and check for it returning -1
     sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);
-    if(sharedMemDetach == -1)
+    sharedMemDetach1 = deallocateMem(seg, (void*) calculationFlg);
+    if(sharedMemDetach == -1 || sharedMemDetach1 == -1)
     {
         perror("bin_adder: Error: Failed to detach shared memory");
         exit(EXIT_FAILURE);

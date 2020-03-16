@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 void sharedMemoryWork(int totalInts, int n, char *inFile)
 {
     key_t key;
-    int sharedMemSegment, sharedMemDetach;
+    int sharedMemSegment, sharedMemDetach, sharedMemDetach1;
     int totalInts1;
 
     //Key returns a key based on the path and id
@@ -153,9 +153,9 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
 
     //Detach and Remove Shared Memory
     sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);     
-    
+    sharedMemDetach1 = deallocateMem(seg, (void*) calculationFlg);   
     //Check for shared memory detach to return -1
-    if(sharedMemDetach == -1)
+    if(sharedMemDetach == -1 || sharedMemDetach1 == -1)
     {
         perror("master: Error: shared memory detach and removal failed");
         exit(EXIT_FAILURE);
@@ -496,9 +496,13 @@ void sigHandler(int sig)
         key_t key = ftok(".",'a');
         int sharedMemSegment;
         sharedMemSegment = shmget(key, sizeof(struct sharedMemory), IPC_CREAT | 0666);
+        key_t key1 = ftok(".", 'b');
+        int seg;
+        seg = shmget(key1, sizeof(int), IPC_CREAT | 0777);
         printf("Timer is up.\n"); 
         printf("Killing children, removing shared memory and unlinking semaphore.\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
+        shmctl(seg, IPC_RMID, NULL);
         sem_unlink("semChild");
         sem_unlink("semLogChild");
         kill(0, SIGKILL);
@@ -510,9 +514,13 @@ void sigHandler(int sig)
         key_t key = ftok(".",'a');
         int sharedMemSegment;
         sharedMemSegment = shmget(key, sizeof(struct sharedMemory), IPC_CREAT | 0666);
+        key_t key1 = ftok(".", 'b');
+        int seg;
+        seg = shmget(key1, sizeof(int), IPC_CREAT | 0777);
         printf("Ctrl-c was entered\n");
         printf("Killing children, removing shared memory and unlinking semaphore\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
+        shmctl(seg, IPC_RMID, NULL);
         sem_unlink("semChild");
         sem_unlink("semLogChild");
         kill(0, SIGKILL);
