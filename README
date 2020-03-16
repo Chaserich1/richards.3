@@ -32,7 +32,14 @@ https://github.com/Chaserich1/richards.3
 
 Additional Project Information:
 
-1.
+1.I included options for specifying the the input file in case you have your own,
+  the number of random integers to generate in the input file, and the timer
+  time for the signal to end the program and kill everything. 
+2.Default for the timer is 100 as specified in the assignment but that is not enough
+  time for my program to complete higher number of integers such as 32, 64, 128, etc.
+  Therefore, for those you need to make the timer larger by doing for example -t 1000
+  which will be plently of time for the program to complete without running out of time.
+3.
 
 -------------------------------------------------------------------------------
 

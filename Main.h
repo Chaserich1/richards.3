@@ -23,9 +23,9 @@
 #include <time.h>
 #include <math.h>
 
+//Input file
 FILE* INFILE;
-int calculationFlg;
-int logCalculationFlg;
+
 //Contains Help Message
 void displayHelpMessage();
 

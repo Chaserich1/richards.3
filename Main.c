@@ -149,8 +149,6 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
         fclose(filePtr);
     }
 
-
-
     //Detach and Remove Shared Memory
     sharedMemDetach = deallocateMem(sharedMemSegment, (void*) smPtr);     
     sharedMemDetach1 = deallocateMem(seg, (void*) calculationFlg);   
@@ -255,6 +253,7 @@ int calculationOne(int totalInts, int calcFlg)
     }
     //Destroy the semaphore
     sem_unlink(semaphoreName);
+    //Return the calculation flg so the program moves onto n/logn
     return calcFlg;
 }
 
@@ -303,6 +302,9 @@ int calculationTwo(int totalInts, int newCalcFlg)
             //Fork returns 0 if it is successful
             else if(pid == 0)
             {
+                /*If there is a remainder then pass the remaining integers
+                  in. So for example if it is 64 there are 12 groups of 5
+                  and one remaining group of 4 integers */
                 int logIntsToAdd;
                 if((index + numIntsToAdd) > totalInts)
                     logIntsToAdd = totalInts - index;
@@ -376,7 +378,7 @@ FILE* openFile(char *fileName, char *mode, int n)
     for(i = 0; i < n; i++)
     {
         int randValue;
-        randValue = (rand() % (256 - 0 + 1) + 0);
+        randValue = (rand() % (256 + 1));
         fprintf(filePtr, "%d\n", randValue);
     }
     fclose(filePtr);
@@ -384,7 +386,8 @@ FILE* openFile(char *fileName, char *mode, int n)
     return filePtr;
 }
 
-//Read the integer values from the file and save to shared memory array
+/*Read the integer values from the file and save to shared 
+  memory array, also returns total num of ints in file */
 int readFileOne(char *fileName, int shmid, int n)
 {
     //Open the file and check for failure
@@ -420,7 +423,8 @@ int readFileOne(char *fileName, int shmid, int n)
     return count;
 }
 
-//Read the integer values from the file and save to shared memory array
+/* Read the integer values from the file and save to 
+   shared memory array, also returns total num of ints in file */
 int readFileTwo(char *fileName, int shmid, int n)
 {
     //Open the file and check for failure
@@ -477,7 +481,7 @@ void writeLogHeaders(calcFlg)
     fclose(logFile); 
 } 
 
-//Shared Memory Deallocation and removal
+//Shared Memory Deallocation and removal - checks for failure in sharedmemwork
 int deallocateMem(int shmid, void *shmaddr) 
 {
     //Detach and remove shared memory

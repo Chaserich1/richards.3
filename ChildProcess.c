@@ -62,13 +62,14 @@ int main(int argc, char* argv[])
         perror("bin_adder: Error: Failed to attach to shared memory calc array");
         exit(EXIT_FAILURE);
     } 
- 
+
+    //Assign index and numIntsToAdd to the exec arguments 
     int index = atoi(argv[1]);
     int numIntsToAdd = atoi(argv[2]);
 
     //printf("%d, %d, %d\n", index, numIntsToAdd, smPtr-> integers[index]);
     
-
+    //If calculation flg is 0 do n/2 calculation and if it is 1 do n/logn calculation
     if(calculationFlg[0] == 0) 
         firstCriticalSection(index, numIntsToAdd);  
     else if(calculationFlg[0] == 1)
@@ -101,6 +102,10 @@ void firstCriticalSection(int index, int numIntsToAdd)
         perror("bin_adder: Error: Failed to open n/2 semaphore");
         exit(EXIT_FAILURE);
     }
+
+    /* numIntsToAdd is 2 for this calculation, so add an index
+       and the following index, store it in the first index, and
+       zero out the second index */
     int i;
     for(i = 1; i < numIntsToAdd; i++)
     {    
@@ -109,7 +114,6 @@ void firstCriticalSection(int index, int numIntsToAdd)
     }
  
     //Critical Section One
-    int k;
     char time[10];
  
     sleep(rand() % 4); //sleep for somewhere between 0-3 seconds
@@ -128,14 +132,15 @@ void firstCriticalSection(int index, int numIntsToAdd)
     sem_post(sem); //Critical section finished, signal semaphore   
 }
 
+// n/logn calculation critical second
 void secondCriticalSection(int index, int numIntsToAdd)
 {
     FILE* file;
     file = fopen("adder_log", "a");
-
+    //Semaphore declarations
     sem_t *sem1;
     char *semaphoreName1 = "semLogChild"; 
-
+    //Open the smaphore and check for failure
     sem1 = sem_open(semaphoreName1, 0);
     if(sem1 == SEM_FAILED)
     {
@@ -143,6 +148,9 @@ void secondCriticalSection(int index, int numIntsToAdd)
         exit(EXIT_FAILURE);
     }
 
+    /* numIntsToAdd is 2 for this calculation, so add an index
+       and the following index, store it in the first index, and
+       zero out the second index */   
     int i;
     for(i = 1; i < numIntsToAdd; i++)
     {
@@ -150,7 +158,7 @@ void secondCriticalSection(int index, int numIntsToAdd)
         smPtr-> integersTwo[index + i] = 0;
     }
     
-    int k;
+    //Critical section for writing to file
     char time[10];
 
     sleep(rand() % 4); //sleep for somewhere between 0-3 seconds
@@ -187,6 +195,7 @@ void timeSetter(char *tStr)
     struct tm *timeStruct;
     time(&ttime);
     timeStruct = localtime(&ttime);
+    //Format the time accordingly
     sprintf(tStr, "%02d:%02d:%02d", timeStruct-> tm_hour, timeStruct-> tm_min, timeStruct-> tm_sec);
          
 }
