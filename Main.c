@@ -9,9 +9,9 @@ int main(int argc, char* argv[])
 {
     int c;
     char *inFile = "input.dat"; //Default inputfile name
-    int n = 1; //Max Children in system at once
-    int totalInts = 0;
-    int t = 100;
+    int n = 64; //Max Children in system at once
+    int totalInts = 64; //Default 64 integers in input the file
+    int t = 100; //Default alarm(100)
 
     while((c = getopt(argc, argv, "hf:n:t:")) != -1)
     {
@@ -107,6 +107,7 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
         exit(EXIT_FAILURE);
     }   
 
+    //Clock variable declarations
     int milliSecCalc1 = 0, milliSecCalc2 = 0;
     clock_t startCalc1, startCalc2, totalCalc1, totalCalc2;
  
@@ -120,27 +121,29 @@ void sharedMemoryWork(int totalInts, int n, char *inFile)
     int calcFlg = calculationFlg[0];
     if(calculationFlg[0] == 0)
     {
-        writeLogHeaders(calcFlg);
-        totalInts = readFileOne(inFile, sharedMemSegment, n);
-        startCalc1 = clock();
-        int newCalcFlg = calculationOne(totalInts, calcFlg);
-        totalCalc1 = clock() - startCalc1;
+        writeLogHeaders(calcFlg); //Write the headers to adder_log
+        totalInts = readFileOne(inFile, sharedMemSegment, n); //Get the total numbers of ints in input file
+        startCalc1 = clock(); //get the start time of the clock
+        int newCalcFlg = calculationOne(totalInts, calcFlg); //set the calculation flag and do calc n/2
+        totalCalc1 = clock() - startCalc1; //Get the end time and subtract the starting clock time for total
         milliSecCalc1 = totalCalc1 * 1000 / CLOCKS_PER_SEC;
+        //Open adder_log and write the total time that calculation n/2 took
         FILE* filePtr = fopen("adder_log", "a");
         fprintf(filePtr, "\nTotal Time for n/2 Calculations: %d seconds %d milliseconds\n", milliSecCalc1/1000, milliSecCalc1%1000);
         fclose(filePtr);
-        calculationFlg[0] = newCalcFlg;
+        calculationFlg[0] = newCalcFlg; //Set the flag to 1 so we go into calculation 2
     }
-
+    //n/logn calculation
     if(calculationFlg[0] == 1)
     {
         int newCalcFlg = 1;
-        writeLogHeaders(newCalcFlg);
-        totalInts = readFileTwo(inFile, sharedMemSegment, n);
-        startCalc2 = clock();
-        calculationTwo(totalInts, newCalcFlg);
-        totalCalc2 = clock() - startCalc2;
+        writeLogHeaders(newCalcFlg); //Write the headers
+        totalInts = readFileTwo(inFile, sharedMemSegment, n); //Get the total numbers of integers in the file
+        startCalc2 = clock(); //Get the start time of the clock
+        calculationTwo(totalInts, newCalcFlg); //Do nlogn calculation
+        totalCalc2 = clock() - startCalc2; //Subtract start time from end time for total
         milliSecCalc2 = totalCalc2 * 1000 / CLOCKS_PER_SEC;
+        //Open the file and write the total time that calculation nlogn took
         FILE* filePtr = fopen("adder_log", "a");
         fprintf(filePtr, "\nTotal Time for n/2 Calculations: %d seconds %d milliseconds\n", milliSecCalc2/1000, milliSecCalc2%1000); 
         fclose(filePtr);
@@ -357,7 +360,7 @@ int calculationTwo(int totalInts, int newCalcFlg)
     return newCalcFlg;
 }    
     
-//Open the input file
+//Open the input file and generate the random values
 FILE* openFile(char *fileName, char *mode, int n)
 {
     FILE* filePtr = fopen(fileName, "w");
@@ -454,6 +457,7 @@ int readFileTwo(char *fileName, int shmid, int n)
     return count;
 }
 
+//This simply write the headers to adder_log
 void writeLogHeaders(calcFlg)
 {
     FILE* logFile = fopen("adder_log", "a");
@@ -492,7 +496,7 @@ void sigHandler(int sig)
         key_t key = ftok(".",'a');
         int sharedMemSegment;
         sharedMemSegment = shmget(key, sizeof(struct sharedMemory), IPC_CREAT | 0666);
-        printf("One-Hundred Seconds is up.\n"); 
+        printf("Timer is up.\n"); 
         printf("Killing children, removing shared memory and unlinking semaphore.\n");
         shmctl(sharedMemSegment, IPC_RMID, NULL);
         sem_unlink("semChild");
@@ -524,12 +528,13 @@ void displayHelpMessage()
     printf("See below for the options:\n\n");
     printf("-h    : Instructions for running the project and terminate.\n");
     printf("-f filename  : Input file (Default: input.dat.\n"); 
-    printf("-n x  : Number of children allowed to exist in the system at same time (Default: 1).\n");
+    printf("-n x  : Number of integers to be randomly generated in the input file (Default: 64).\n");
+    printf("-t x  : Number of seconds for the program timer that goes into the alarm (Default: 100).\n");
     printf("\n---------------------------------------------------------\n");
     printf("Examples of how to run program(default and with options):\n\n");
     printf("$ make\n");
     printf("$ ./master\n");
-    printf("$ ./master -f input.dat -n 10\n");
+    printf("$ ./master -f input.dat -n 32 -t 200\n");
     printf("$ make clean\n");
     printf("\n---------------------------------------------------------\n"); 
     exit(0);

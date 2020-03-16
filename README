@@ -12,11 +12,11 @@ $ export PATH="$PATH:."
 
 To Run (Default option values or using options):
 
-$ 
+$ ./master 
 or
-$ 
+$ ./master -f input.dat -n 32 -t 200
 
-To remove all .o, .dat and the executables:
+To remove all .o, .dat, adder_log and the executables:
 
 $ make clean
 
