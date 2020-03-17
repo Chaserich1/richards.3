@@ -378,7 +378,7 @@ FILE* openFile(char *fileName, char *mode, int n)
     for(i = 0; i < n; i++)
     {
         int randValue;
-        randValue = (rand() % (256 + 1));
+        randValue = (rand() % 256);
         fprintf(filePtr, "%d\n", randValue);
     }
     fclose(filePtr);

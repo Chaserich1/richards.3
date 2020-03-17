@@ -34,11 +34,12 @@ Performance:
 
 When n = 64, method 1 (n/2) takes over double the amount of time that n/logn
 takes, for the input.dat file I included n/2 takes 2.36 times the amount of time
-as n/logn. Method 1 (n/2) took 143 seconds and method 2 (n/logn) took 61 seconds.
+as n/logn. Method 1 (n/2) took 144 seconds and method 2 (n/logn) took 61 seconds.
 Method 2 took less than half the time because it only had to run 23 processes
-compared to the 63 processes that n/2 ran. I found similar results when I ran
-different input integer totals such as 32, 128, and 256. I left the input.dat
-and adder_log files in my directory but they will be removed by "make clean".
+compared to the 63 processes that n/2 ran. I found roughly similar results when I ran
+different input integer totals such as 32, 128, and 256. Though the higher the number
+of integers the difference expanded - meaning method 1 took far longer than method 2. 
+I left the input.dat and adder_log files in my directory but they will be removed by "make clean".
 Once you do make clean you can run the program again using the instructions
 above. The timer needs to be specified with the -t option and needs to be greater
 than 100 for 32, 64, 128, 256 input integers. I found -t 300 cover 64 and -t 900
