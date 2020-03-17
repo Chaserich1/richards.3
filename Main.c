@@ -190,7 +190,7 @@ int calculationOne(int totalInts, int calcFlg)
     while(calcFlg == 0)
     {
         //If there are less than 20 children, index & children & finished children are less than the total ints in the file
-        if(runningChildren < 20 && childCounter < totalInts && completedChildren < totalInts && index < totalInts && calcFlg == 0)
+        if(runningChildren < 20 && childCounter < totalInts && index < totalInts)
         {
             //Fork
             pid = fork();
@@ -265,7 +265,7 @@ int calculationTwo(int totalInts, int newCalcFlg)
     int runningChildren = 0; //Children in system
     int childCounter = 0;
     int index = 0;
-    int numIntsToAdd = ceil(log(totalInts));
+    int numIntsToAdd = ceil(log2(totalInts)); //Number of ints per group
     int temp = totalInts/(ceil(log(totalInts)));
     pid_t pid, waitingID;
     int status;
@@ -289,7 +289,7 @@ int calculationTwo(int totalInts, int newCalcFlg)
     {
         /*If there are less than 20 children, index & children 
           & finished children are less than the total ints in the file*/
-        if(runningChildren < 20 && childCounter < totalInts && completedChildren < totalInts && index < totalInts && newCalcFlg == 1)
+        if(runningChildren < 20 && childCounter < totalInts && index < totalInts)
         {
             //Fork
             pid = fork();
@@ -303,7 +303,7 @@ int calculationTwo(int totalInts, int newCalcFlg)
             else if(pid == 0)
             {
                 /*If there is a remainder then pass the remaining integers
-                  in. So for example if it is 64 there are 12 groups of 5
+                  in. So for example if it is 64 there are 10 groups of 6
                   and one remaining group of 4 integers */
                 int logIntsToAdd;
                 if((index + numIntsToAdd) > totalInts)
@@ -476,7 +476,7 @@ void writeLogHeaders(calcFlg)
     else
          fprintf(logFile, "\n\n n/logn groups");
      
-    fprintf(logFile, "\n----------------------------------------------------------------------\n");
+    fprintf(logFile, "\n----------------------------------------------------------------------------------\n");
     fprintf(logFile, "\tPID\t\tIndex\t\tSize\t\tResult\t\tTime\n");
     fclose(logFile); 
 } 
@@ -539,7 +539,7 @@ void displayHelpMessage()
     printf("\n---------------------------------------------------------\n");
     printf("See below for the options:\n\n");
     printf("-h    : Instructions for running the project and terminate.\n");
-    printf("-f filename  : Input file (Default: input.dat.\n"); 
+    printf("-f filename  : Input file (Default: input.dat).\n"); 
     printf("-n x  : Number of integers to be randomly generated in the input file (Default: 64).\n");
     printf("-t x  : Number of seconds for the program timer that goes into the alarm (Default: 100).\n");
     printf("\n---------------------------------------------------------\n");

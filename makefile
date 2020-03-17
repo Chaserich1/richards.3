@@ -22,5 +22,5 @@ $(TARGET2): $(OBJS2)
 	$(CC) $(ALL_CFLAGS) -c $<
 
 clean:
-	rm -f *.o *.dat $(TARGET1) $(TARGET2)
+	rm -f *.o *.dat $(TARGET1) $(TARGET2) $(LOGFILE)
 	find . -maxdepth 1 -type f -executable -exec rm {} +
